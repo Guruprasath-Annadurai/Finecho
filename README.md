@@ -48,7 +48,7 @@ FinEcho is an AI-powered personal finance assistant that helps users manage expe
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/Finecho.git
+git clone https://github.com/Guruprasath-Annadurai/Finecho.git
 cd Finecho
 
 # Install dependencies
