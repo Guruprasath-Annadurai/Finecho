@@ -1,0 +1,114 @@
+Step 1: Splash Screen (React + TailwindCSS)
+Here’s your React component for a clean, animated Splash Screen to kick off the FinEcho app:
+
+✅ File: client/src/pages/SplashScreen.jsx
+jsx
+Copy
+Edit
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaMicrophoneAlt } from "react-icons/fa";
+
+const SplashScreen = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      navigate("/dashboard"); // Redirect to main app after splash
+    }, 3000); // 3-second splash duration
+
+    return () => clearTimeout(timeout);
+  }, [navigate]);
+
+  return (
+    <div className="h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-indigo-700 text-white">
+      <div className="text-center animate-fade-in">
+        <div className="flex justify-center mb-4">
+          <FaMicrophoneAlt className="text-5xl text-white animate-pulse" />
+        </div>
+        <h1 className="text-4xl font-bold mb-2">FinEcho</h1>
+        <p className="text-lg text-gray-200">Your Voice-First AI Financial Assistant</p>
+      </div>
+    </div>
+  );
+};
+
+export default SplashScreen;
+🧾 Step 2: Tailwind Setup (if not done)
+In your Replit React app, run:
+
+bash
+Copy
+Edit
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+Then configure:
+
+✅ File: tailwind.config.js
+js
+Copy
+Edit
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}"
+  ],
+  theme: {
+    extend: {
+      animation: {
+        "fade-in": "fadeIn 1.5s ease-in-out"
+      },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: 0 },
+          "100%": { opacity: 1 }
+        }
+      }
+    },
+  },
+  plugins: [],
+}
+✅ File: src/index.css
+css
+Copy
+Edit
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+🧭 Step 3: Router Setup
+✅ File: App.jsx
+jsx
+Copy
+Edit
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import SplashScreen from "./pages/SplashScreen";
+import Dashboard from "./pages/Dashboard"; // Placeholder for now
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<SplashScreen />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
+📦 Step 4: Dummy Dashboard for Navigation (for now)
+✅ File: client/src/pages/Dashboard.jsx
+jsx
+Copy
+Edit
+import React from "react";
+
+const Dashboard = () => {
+  return (
+    <div className="h-screen flex items-center justify-center text-center bg-gray-100">
+      <h2 className="text-2xl font-bold text-gray-800">Welcome to FinEcho Dashboard</h2>
+    </div>
+  );
+};
+
+export default Dashboard;

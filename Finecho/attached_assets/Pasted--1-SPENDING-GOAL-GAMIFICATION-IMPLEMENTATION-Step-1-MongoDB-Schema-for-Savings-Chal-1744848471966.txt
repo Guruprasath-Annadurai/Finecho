@@ -1,0 +1,166 @@
+[1] SPENDING GOAL GAMIFICATION – IMPLEMENTATION IN REPLIT
+🔨 Step 1: MongoDB Schema for Savings Challenge
+🔹 Create a new collection in db.py
+python
+Copy
+Edit
+savings_collection = db["savings_goals"]
+🔹 Define the structure:
+json
+Copy
+Edit
+{
+  "userId": "abc123",
+  "total_goal": 100,
+  "daily_target": 10,
+  "start_date": "2025-04-17",
+  "end_date": "2025-04-27",
+  "progress": [
+    { "date": "2025-04-17", "saved": 10 },
+    { "date": "2025-04-18", "saved": 5 }
+  ]
+}
+⚙️ Step 2: Backend Routes – Flask
+✅ 1. Route: Set New Goal
+python
+Copy
+Edit
+@app.route("/set-savings-goal", methods=["POST"])
+def set_savings_goal():
+    data = request.get_json()
+    savings_collection.delete_many({"userId": data["userId"]})  # replace existing
+
+    savings_collection.insert_one({
+        "userId": data["userId"],
+        "total_goal": data["total_goal"],
+        "daily_target": data["daily_target"],
+        "start_date": data["start_date"],
+        "end_date": data["end_date"],
+        "progress": []
+    })
+    return jsonify({"message": "Goal set"})
+✅ 2. Route: Add Daily Progress
+python
+Copy
+Edit
+@app.route("/log-savings", methods=["POST"])
+def log_savings():
+    data = request.get_json()
+    savings_collection.update_one(
+        {"userId": data["userId"]},
+        {"$push": {
+            "progress": {
+                "date": data["date"],
+                "saved": data["saved"]
+            }
+        }}
+    )
+    return jsonify({"message": "Saved successfully"})
+✅ 3. Route: Get Current Goal & Streaks
+python
+Copy
+Edit
+@app.route("/get-savings-goal", methods=["POST"])
+def get_savings_goal():
+    data = request.get_json()
+    goal = savings_collection.find_one({"userId": data["userId"]}, {"_id": 0})
+    return jsonify(goal or {})
+🎨 Step 3: React UI – Set + Track Goal
+✅ 1. Set Goal Page/Modal
+jsx
+Copy
+Edit
+const setSavingsGoal = async () => {
+  const total = prompt("Enter your total goal amount (e.g., 100)");
+  const days = prompt("In how many days? (e.g., 10)");
+  const start = new Date();
+  const end = new Date();
+  end.setDate(start.getDate() + parseInt(days));
+  const daily = total / days;
+
+  await axios.post("http://localhost:5000/set-savings-goal", {
+    userId: user.uid,
+    total_goal: parseFloat(total),
+    daily_target: daily,
+    start_date: start.toISOString().split("T")[0],
+    end_date: end.toISOString().split("T")[0],
+  });
+
+  alert("Goal set! 🎯");
+};
+✅ 2. Log Progress Button
+jsx
+Copy
+Edit
+const logProgress = async () => {
+  const amount = prompt("How much did you save today?");
+  const today = new Date().toISOString().split("T")[0];
+
+  await axios.post("http://localhost:5000/log-savings", {
+    userId: user.uid,
+    date: today,
+    saved: parseFloat(amount)
+  });
+
+  alert("Saved progress logged 💰");
+};
+✅ 3. Progress Display (Use Chart or Simple Card)
+jsx
+Copy
+Edit
+useEffect(() => {
+  const fetchGoal = async () => {
+    const res = await axios.post("http://localhost:5000/get-savings-goal", {
+      userId: user.uid
+    });
+    setGoal(res.data);
+  };
+  fetchGoal();
+}, []);
+Then render something like:
+
+jsx
+Copy
+Edit
+<p>🎯 Goal: £{goal.total_goal}</p>
+<p>📆 Daily Target: £{goal.daily_target}</p>
+<p>🔥 Streak: {goal.progress?.length} days</p>
+<progress value={totalSaved} max={goal.total_goal} />
+🤖 Step 4: AI-Driven Goal Suggestion (Optional)
+Backend (Flask):
+python
+Copy
+Edit
+@app.route("/suggest-goal", methods=["POST"])
+def suggest_goal():
+    data = request.get_json()
+    user_id = data["userId"]
+    last_7_days = datetime.utcnow() - timedelta(days=7)
+    txns = transactions_collection.find({
+        "userId": user_id,
+        "date": {"$gte": str(last_7_days.date())}
+    })
+
+    total_spend = sum(t.get("amount", 0) for t in txns)
+    suggested = round((total_spend / 7) * 0.8, 2)  # Save 80% of daily spend
+
+    return jsonify({"suggested_daily_goal": suggested})
+Frontend (Optional Button)
+jsx
+Copy
+Edit
+const suggestGoal = async () => {
+  const res = await axios.post("http://localhost:5000/suggest-goal", {
+    userId: user.uid
+  });
+  alert(`Suggested daily savings target: £${res.data.suggested_daily_goal}`);
+};
+✅ Done! You now have:
+Savings goals
+
+Daily tracking
+
+Streaks and progress bar
+
+Optional AI-based goal recommendation
+

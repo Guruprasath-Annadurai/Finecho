@@ -1,0 +1,134 @@
+[2] Multi-Currency Support + FX Detection — Full Implementation
+🧩 Feature Overview
+💱 Detect currency based on:
+
+NLP input (e.g., “I spent 50 USD…”)
+
+IP/location (optional enhancement)
+
+🔁 Convert native currency → base (e.g., USD → GBP)
+
+📊 Show totals in both currencies (user toggle)
+
+🏗 Step 1: Add Currency Field to Transactions
+✅ Modify your voice parser (nlp_parser.py):
+Update regex and parsing logic to detect currency:
+
+python
+Copy
+Edit
+import re
+
+def detect_currency(text):
+    if "usd" in text.lower() or "$" in text:
+        return "USD"
+    elif "eur" in text.lower() or "€" in text:
+        return "EUR"
+    elif "inr" in text.lower() or "₹" in text:
+        return "INR"
+    elif "gbp" in text.lower() or "£" in text:
+        return "GBP"
+    else:
+        return "GBP"  # Default
+
+def extract_data(text):
+    ...
+    currency = detect_currency(text)
+    return {
+        "amount": amount,
+        "vendor": vendor,
+        "category": category,
+        "date": str(date.date()),
+        "currency": currency
+    }
+🔗 Step 2: Use FX API for Live Conversion
+✅ Use ExchangeRate-API or OpenExchangeRates
+Let’s use ExchangeRate-API (Free + simple)
+
+🔹 Install in Flask (if using requests):
+bash
+Copy
+Edit
+pip install requests
+🔹 Add this in fx_converter.py
+python
+Copy
+Edit
+import requests
+import os
+
+def convert_to_base(amount, from_currency, to_currency="GBP"):
+    if from_currency == to_currency:
+        return amount
+    api_key = os.getenv("FX_API_KEY")
+    url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{from_currency}"
+    res = requests.get(url)
+    rates = res.json().get("conversion_rates", {})
+    return round(amount * rates.get(to_currency, 1), 2)
+🛠 Step 3: Integrate into /parse or /save
+Update your parse_text() or save_transaction() endpoint to convert:
+
+python
+Copy
+Edit
+from fx_converter import convert_to_base
+
+@app.route("/parse", methods=["POST"])
+def parse_text():
+    ...
+    parsed["base_amount"] = convert_to_base(parsed["amount"], parsed["currency"])
+    return jsonify(parsed)
+🧮 Step 4: Modify MongoDB Schema
+Every transaction now includes:
+
+json
+Copy
+Edit
+{
+  "amount": 50,
+  "currency": "USD",
+  "base_amount": 39.45,
+  "base_currency": "GBP"
+}
+🎨 Step 5: React Dashboard – Toggle View
+Add a toggle button:
+
+jsx
+Copy
+Edit
+const [viewBaseCurrency, setViewBaseCurrency] = useState(true);
+Toggle:
+
+jsx
+Copy
+Edit
+<button
+  onClick={() => setViewBaseCurrency(!viewBaseCurrency)}
+  className="bg-indigo-500 text-white px-4 py-1 rounded mt-4"
+>
+  View in {viewBaseCurrency ? "Native" : "Base"} Currency
+</button>
+Then in your chart logic:
+
+jsx
+Copy
+Edit
+const total = viewBaseCurrency ? txn.base_amount : txn.amount;
+const label = viewBaseCurrency ? "GBP" : txn.currency;
+📈 Optional: Add FX Rate Viewer
+Show today’s rates in a card:
+
+jsx
+Copy
+Edit
+<p>🌍 Today's FX: 1 USD ≈ 0.79 GBP</p>
+Fetch on load from the same FX API.
+
+✅ You’ve Now Got:
+🌐 Multi-currency input
+
+🔁 Realtime currency conversion
+
+🪙 Base + native view toggle
+
+💼 Global-ready app for expats, travelers, and multi-country users

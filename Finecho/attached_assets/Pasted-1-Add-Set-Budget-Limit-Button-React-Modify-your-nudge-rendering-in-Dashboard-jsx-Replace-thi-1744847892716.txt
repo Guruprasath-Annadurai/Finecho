@@ -1,0 +1,134 @@
+1. Add “Set Budget Limit” Button (React)
+✅ Modify your nudge rendering in Dashboard.jsx:
+Replace this block:
+jsx
+Copy
+Edit
+<p className="text-gray-800">{n.message}</p>
+With this:
+jsx
+Copy
+Edit
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+  <p className="text-gray-800">{n.message}</p>
+  {n.type === "overspend" && (
+    <button
+      onClick={() => handleSetLimit(n.category)}
+      className="mt-2 sm:mt-0 bg-indigo-600 text-white px-4 py-1 rounded hover:bg-indigo-700"
+    >
+      Set Budget Limit
+    </button>
+  )}
+</div>
+🧠 2. Store Budget Limits in MongoDB (Flask)
+✅ Step 1: Create New Collection in db.py
+python
+Copy
+Edit
+budget_collection = db["budgets"]
+✅ Step 2: Add Route to Save Budget Limit in app.py
+python
+Copy
+Edit
+@app.route("/set-budget", methods=["POST"])
+def set_budget():
+    data = request.get_json()
+    user_id = data.get("userId")
+    category = data.get("category")
+    limit = data.get("limit")
+
+    if not all([user_id, category, limit]):
+        return jsonify({"error": "Missing fields"}), 400
+
+    budget_collection.update_one(
+        {"userId": user_id, "category": category},
+        {"$set": {"limit": float(limit)}},
+        upsert=True
+    )
+
+    return jsonify({"message": "Budget limit set successfully"})
+🧠 3. Update Nudge Engine to Check for Budget Limit
+✅ Modify generate_nudges() in nudge_engine.py:
+Add at the top:
+
+python
+Copy
+Edit
+from db import budget_collection
+Then inside the loop, after calculating total:
+
+python
+Copy
+Edit
+budget_doc = budget_collection.find_one({"userId": user_id, "category": category})
+if budget_doc and total > budget_doc["limit"]:
+    nudges.append({
+        "type": "goal_breach",
+        "message": f"You’ve exceeded your soft budget limit for {category}. Time to re-evaluate?"
+    })
+💬 4. GPT-Generated Tip (Optional but 🔥)
+Use this only if OpenAI is available to you. Otherwise, simulate with static logic.
+
+✅ Add to nudge_engine.py
+python
+Copy
+Edit
+import openai
+import os
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def generate_ai_tip(category, overspend):
+    prompt = (
+        f"You are a smart finance assistant. Give a 1-line tip for someone who spent £{overspend:.2f} "
+        f"over their usual budget in the '{category}' category."
+    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50
+        )
+        tip = response.choices[0].message.content.strip()
+        return tip
+    except:
+        return None
+Then inside your overspend check:
+
+python
+Copy
+Edit
+tip = generate_ai_tip(category, total - avg)
+if tip:
+    nudges.append({
+        "type": "ai_tip",
+        "message": tip
+    })
+🔗 5. React: Handle Set Limit Action
+In Dashboard.jsx:
+
+jsx
+Copy
+Edit
+const handleSetLimit = async (category) => {
+  const limit = prompt(`Enter soft budget limit for ${category}:`);
+  if (!limit || isNaN(limit)) return;
+
+  await axios.post("http://localhost:5000/set-budget", {
+    userId: user.uid,
+    category,
+    limit: parseFloat(limit)
+  });
+
+  alert(`Budget limit for ${category} set to £${limit}`);
+};
+✅ Final Result
+Your app now has:
+
+🚦 User-defined budget limits saved securely
+
+🚨 Nudges triggered by limit breaches
+
+💡 AI-generated saving tips (with OpenAI)
+
+🧠 All mapped per-user via Firebase Auth

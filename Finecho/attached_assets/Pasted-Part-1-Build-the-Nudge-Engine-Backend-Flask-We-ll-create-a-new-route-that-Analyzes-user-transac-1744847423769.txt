@@ -1,0 +1,114 @@
+Part 1: Build the Nudge Engine Backend (Flask)
+We’ll create a new route that:
+
+Analyzes user transactions from MongoDB
+
+Detects budget overspending per category
+
+Sends “nudges” (alerts) back to the frontend
+
+✅ Step 1: Create nudge_engine.py
+python
+Copy
+Edit
+from datetime import datetime, timedelta
+from db import transactions_collection
+
+def generate_nudges(user_id):
+    now = datetime.utcnow()
+    last_30 = now - timedelta(days=30)
+
+    transactions = list(transactions_collection.find({
+        "userId": user_id,
+        "date": {"$gte": str(last_30.date())}
+    }))
+
+    if not transactions:
+        return [{"type": "reminder", "message": "No expenses logged in the last 30 days. Staying on top of your spending helps!"}]
+
+    # Sum by category
+    category_sums = {}
+    category_counts = {}
+    for txn in transactions:
+        category = txn.get("category", "other")
+        amount = txn.get("amount", 0)
+        category_sums[category] = category_sums.get(category, 0) + amount
+        category_counts[category] = category_counts.get(category, 0) + 1
+
+    nudges = []
+
+    # Average and detect anomalies
+    for category, total in category_sums.items():
+        count = category_counts[category]
+        avg = total / count if count else 1
+        if total > avg * 2:
+            nudges.append({
+                "type": "overspend",
+                "message": f"You're spending more than usual on {category}. Consider setting a soft limit."
+            })
+
+    return nudges
+✅ Step 2: Add a New Route in app.py
+python
+Copy
+Edit
+from nudge_engine import generate_nudges
+
+@app.route("/nudges", methods=["POST"])
+def get_nudges():
+    data = request.get_json()
+    user_id = data.get("userId")
+    if not user_id:
+        return jsonify({"error": "Missing userId"}), 400
+
+    nudges = generate_nudges(user_id)
+    return jsonify(nudges)
+🎨 Part 2: Connect to Dashboard (React)
+We’ll call /nudges and show the results in a card UI.
+
+✅ Step 3: Update Dashboard.jsx
+At the top:
+jsx
+Copy
+Edit
+import { useAuth } from "../context/AuthContext"; // If using context
+Inside Dashboard component:
+jsx
+Copy
+Edit
+const [nudges, setNudges] = useState([]);
+const { user } = useAuth(); // Get Firebase user
+
+useEffect(() => {
+  const fetchNudges = async () => {
+    if (!user) return;
+    const res = await axios.post("http://localhost:5000/nudges", {
+      userId: user.uid,
+    });
+    setNudges(res.data);
+  };
+
+  fetchNudges();
+}, [user]);
+Add Nudge Display (below the chart):
+jsx
+Copy
+Edit
+<div className="mt-8">
+  <h2 className="text-xl font-semibold mb-3 text-indigo-800">💡 Smart Nudges</h2>
+  {nudges.length > 0 ? (
+    nudges.map((n, idx) => (
+      <div key={idx} className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-2 rounded shadow">
+        <p className="text-gray-800">{n.message}</p>
+      </div>
+    ))
+  ) : (
+    <p className="text-gray-600">No nudges at the moment. You’re doing great! 🎉</p>
+  )}
+</div>
+✅ You’ve Just Added:
+🧠 AI-driven financial intelligence
+
+🚨 Real-time personalized insights
+
+💼 A standout feature that recruiters will notice and remember
