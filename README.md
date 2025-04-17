@@ -38,12 +38,6 @@ FinEcho is an AI-powered personal finance assistant that helps users manage expe
 
 ---
 
-## 📷 Screenshots
-
-> *(Add a few GIFs or PNGs showing key features like goal tracker, forecast, chatbot, etc.)*
-
----
-
 ## 🧑‍💻 Getting Started
 
 ```bash
